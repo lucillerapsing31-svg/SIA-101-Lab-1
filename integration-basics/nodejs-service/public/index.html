@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integration Calculator</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            background-color: #f0fdfa;
+            margin: 0;
+        }
+        
+        .calculator {
+            width: 360px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            padding: 20px;
+        }
+
+        .display {
+            background-color: #1e293b;
+            color: white;
+            font-size: 42px;
+            text-align: right;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            min-height: 70px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+            word-wrap: break-word;
+            word-break: break-all;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        button {
+            border: none;
+            border-radius: 10px;
+            font-size: 20px;
+            padding: 18px 0;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            font-weight: 500;
+        }
+
+        button:active { transform: scale(0.95); }
+
+        .btn-num { background-color: #f1f5f9; color: #1e293b; }
+        .btn-num:hover { background-color: #e2e8f0; }
+
+        .btn-func { background-color: #ccfbf1; color: #0f766e; font-size: 16px; }
+        .btn-func:hover { background-color: #99f6e4; }
+
+        .btn-op { background-color: #14b8a6; color: white; font-size: 24px; }
+        .btn-op:hover { background-color: #0d9488; }
+
+        .btn-equals { background-color: #0f766e; color: white; }
+        .btn-equals:hover { background-color: #115e59; }
+
+        .history {
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 15px;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator">
+        <div class="display" id="display">0</div>
+        <div class="buttons">
+            <!-- Row 1: Functions -->
+            <button class="btn-func" onclick="clearDisplay()">C</button>
+            <button class="btn-func" onclick="toggleSign()">+/-</button>
+            <button class="btn-func" onclick="inputOperator('%')">% Mod</button>
+            <button class="btn-func" onclick="inputOperator('^')">^ Pow</button>
+
+            <!-- Row 2: Numbers + Divide + Square Root -->
+            <button class="btn-num" onclick="inputNumber('7')">7</button>
+            <button class="btn-num" onclick="inputNumber('8')">8</button>
+            <button class="btn-num" onclick="inputNumber('9')">9</button>
+            <button class="btn-op" onclick="inputOperator('÷')">÷</button>
+
+            <!-- Row 3 -->
+            <button class="btn-num" onclick="inputNumber('4')">4</button>
+            <button class="btn-num" onclick="inputNumber('5')">5</button>
+            <button class="btn-num" onclick="inputNumber('6')">6</button>
+            <button class="btn-op" onclick="inputOperator('×')">×</button>
+
+            <!-- Row 4 -->
+            <button class="btn-num" onclick="inputNumber('1')">1</button>
+            <button class="btn-num" onclick="inputNumber('2')">2</button>
+            <button class="btn-num" onclick="inputNumber('3')">3</button>
+            <button class="btn-op" onclick="inputOperator('-')">-</button>
+
+            <!-- Row 5 -->
+            <button class="btn-num" onclick="inputNumber('0')">0</button>
+            <button class="btn-num" onclick="inputNumber('.')">.</button>
+            <button class="btn-func" onclick="inputOperator('√')">√</button>
+            <button class="btn-op" onclick="inputOperator('+')">+</button>
+
+            <!-- Row 6: Equals spanning full width -->
+            <button class="btn-equals" onclick="calculate()" style="grid-column: span 4;">=</button>
+        </div>
+        <div class="history" id="history">Ready</div>
+    </div>
+
+    <script>
+        let currentInput = '0';
+        let previousInput = '';
+        let operator = null;
+        let shouldResetDisplay = false;
+
+        const display = document.getElementById('display');
+        const historyDiv = document.getElementById('history');
+
+        function updateDisplay() {
+            display.innerText = currentInput;
+        }
+
+        function inputNumber(num) {
+            if (shouldResetDisplay) {
+                currentInput = num;
+                shouldResetDisplay = false;
+            } else {
+                if (num === '.' && currentInput.includes('.')) return;
+                if (currentInput === '0' && num !== '.') {
+                    currentInput = num;
+                } else {
+                    currentInput += num;
+                }
+            }
+            updateDisplay();
+        }
+
+        function inputOperator(op) {
+            // If we're pressing √, we calculate immediately (since it's a single-number operation)
+            if (op === '√') {
+                const num = parseFloat(currentInput);
+                if (num < 0) {
+                    currentInput = 'Error: Negative';
+                    historyDiv.innerText = '✗ Cannot square root a negative';
+                    updateDisplay();
+                    return;
+                }
+                operator = 'square_root';
+                previousInput = currentInput;
+                currentInput = '0'; // Reset for next
+                calculate();
+                return;
+            }
+
+            if (operator !== null && !shouldResetDisplay) {
+                calculate(); // Chain calculations
+            }
+            previousInput = currentInput;
+            operator = op;
+            shouldResetDisplay = true;
+        }
+
+        function clearDisplay() {
+            currentInput = '0';
+            previousInput = '';
+            operator = null;
+            shouldResetDisplay = false;
+            updateDisplay();
+            historyDiv.innerText = 'Ready';
+        }
+
+        function toggleSign() {
+            if (currentInput !== '0') {
+                currentInput = (parseFloat(currentInput) * -1).toString();
+                updateDisplay();
+            }
+        }
+
+        async function calculate() {
+            if (operator === null) return;
+
+            // Map display symbols to backend operations
+            let backendOp = '';
+            let expression = '';
+
+            if (operator === 'square_root') {
+                backendOp = 'square_root';
+                expression = `√${previousInput}`;
+            } else {
+                if (previousInput === '') return;
+                const num1 = parseFloat(previousInput);
+                const num2 = parseFloat(currentInput);
+                expression = `${previousInput} ${operator} ${currentInput}`;
+
+                if (operator === '+') backendOp = 'add';
+                else if (operator === '-') backendOp = 'subtract';
+                else if (operator === '×') backendOp = 'multiply';
+                else if (operator === '÷') backendOp = 'divide';
+                else if (operator === '%') backendOp = 'modulo';
+                else if (operator === '^') backendOp = 'power';
+            }
+
+            historyDiv.innerText = 'Calculating...';
+
+            const num1 = parseFloat(previousInput);
+            const num2 = (operator === 'square_root') ? 0 : parseFloat(currentInput);
+
+            try {
+                const response = await fetch('/api/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ num1: num1, num2: num2, operation: backendOp })
+                });
+                
+                const data = await response.json();
+                
+                if (data.python_result && data.python_result.result !== undefined) {
+                    currentInput = data.python_result.result.toString();
+                    historyDiv.innerText = `✓ ${expression} = ${currentInput}`;
+                } else {
+                    currentInput = 'Error';
+                    historyDiv.innerText = `✗ ${data.error || 'Calculation failed'}`;
+                }
+            } catch (error) {
+                currentInput = 'Error';
+                historyDiv.innerText = '✗ Connection Error';
+            }
+
+            updateDisplay();
+            operator = null;
+            previousInput = '';
+            shouldResetDisplay = true;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '0' && e.key <= '9') inputNumber(e.key);
+            else if (e.key === '.') inputNumber('.');
+            else if (e.key === '+') inputOperator('+');
+            else if (e.key === '-') inputOperator('-');
+            else if (e.key === '*') inputOperator('×');
+            else if (e.key === '/') inputOperator('÷');
+            else if (e.key === '%') inputOperator('%');
+            else if (e.key === '^') inputOperator('^');
+            else if (e.key === 'r') inputOperator('√');
+            else if (e.key === 'Enter' || e.key === '=') calculate();
+            else if (e.key === 'Escape' || e.key === 'c') clearDisplay();
+        });
+    </script>
+</body>
+</html>
